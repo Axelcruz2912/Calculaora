@@ -9,13 +9,16 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useHistory } from '../hooks/useHistory';
+import { useHistory, HistoryEntry } from '../hooks/useHistory';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../hooks/useLanguage';
 
 // Componente separado para cada item del historial
-const HistoryItem = ({ item, index }: { item: any; index: number }) => {
+const HistoryItem = ({ item, index }: { item: HistoryEntry; index: number }) => {
   const itemAnim = useRef(new Animated.Value(0)).current;
+  const { getNumberInSystem } = useLanguage();
 
   useEffect(() => {
     Animated.timing(itemAnim, {
@@ -25,6 +28,20 @@ const HistoryItem = ({ item, index }: { item: any; index: number }) => {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const getIcon = () => {
+    if (item.type === 'conversion') {
+      return <Ionicons name="swap-horizontal" size={20} color="#6c5ce7" />;
+    }
+    return <Ionicons name="calculator" size={20} color="#6c5ce7" />;
+  };
+
+  const getDisplayText = () => {
+    if (item.type === 'conversion') {
+      return `${getNumberInSystem(item.amount || '')} ${item.fromCurrency} → ${getNumberInSystem(item.convertedAmount || '')} ${item.toCurrency}`;
+    }
+    return `${item.expression} = ${getNumberInSystem(item.result || '')}`;
+  };
 
   return (
     <Animated.View
@@ -49,15 +66,21 @@ const HistoryItem = ({ item, index }: { item: any; index: number }) => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <View style={styles.itemContent}>
-          <Text style={styles.expressionText}>{item.expression} =</Text>
-          <Text style={styles.resultText}>{item.result}</Text>
-          <Text style={styles.timestampText}>
-            {new Date(item.timestamp).toLocaleString()}
-          </Text>
+        <View style={styles.itemIconContainer}>
+          {getIcon()}
         </View>
-        <View style={styles.itemIcon}>
-          <Ionicons name="chevron-forward" size={20} color="#6c5ce7" />
+        <View style={styles.itemContent}>
+          <Text style={styles.expressionText}>{getDisplayText()}</Text>
+          <View style={styles.itemFooter}>
+            <Text style={styles.timestampText}>
+              {new Date(item.timestamp).toLocaleString()}
+            </Text>
+            {item.type === 'conversion' && (
+              <View style={styles.conversionBadge}>
+                <Text style={styles.conversionBadgeText}>Conversión</Text>
+              </View>
+            )}
+          </View>
         </View>
       </LinearGradient>
     </Animated.View>
@@ -66,6 +89,7 @@ const HistoryItem = ({ item, index }: { item: any; index: number }) => {
 
 export default function HistoryScreen() {
   const { history, clearHistory } = useHistory();
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -78,16 +102,16 @@ export default function HistoryScreen() {
 
   const handleClearAll = () => {
     Alert.alert(
-      'Limpiar Historial',
-      '¿Estás seguro de que quieres eliminar todo el historial?',
+      t('clearAll'),
+      t('clearConfirm'),
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', onPress: clearHistory, style: 'destructive' },
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('deleteAll'), onPress: clearHistory, style: 'destructive' },
       ]
     );
   };
 
-  const renderHistoryItem = ({ item, index }: { item: any; index: number }) => (
+  const renderHistoryItem = ({ item, index }: { item: HistoryEntry; index: number }) => (
     <HistoryItem item={item} index={index} />
   );
 
@@ -96,9 +120,9 @@ export default function HistoryScreen() {
       <View style={styles.emptyIconContainer}>
         <Ionicons name="calculator-outline" size={80} color="rgba(108, 92, 231, 0.3)" />
       </View>
-      <Text style={styles.emptyText}>Sin historial</Text>
+      <Text style={styles.emptyText}>{t('noHistory')}</Text>
       <Text style={styles.emptySubText}>
-        Realiza cálculos para verlos aquí
+        {t('noHistorySub')}
       </Text>
     </Animated.View>
   );
@@ -118,7 +142,7 @@ export default function HistoryScreen() {
               end={{ x: 1, y: 0 }}
             >
               <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
-              <Text style={styles.clearText}>Limpiar todo</Text>
+              <Text style={styles.clearText}>{t('clearAll')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -132,7 +156,6 @@ export default function HistoryScreen() {
           showsVerticalScrollIndicator={false}
         />
         
-        {/* Espacio para el navbar flotante */}
         <View style={styles.bottomSpacer} />
       </SafeAreaView>
     </LinearGradient>
@@ -163,28 +186,44 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+  },
+  itemIconContainer: {
+    marginRight: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemContent: {
     flex: 1,
   },
   expressionText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
-  },
-  resultText: {
     color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  itemFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 4,
   },
   timestampText: {
     color: 'rgba(255,255,255,0.3)',
     fontSize: 11,
-    marginTop: 6,
   },
-  itemIcon: {
-    marginLeft: 10,
+  conversionBadge: {
+    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  conversionBadgeText: {
+    color: '#a29bfe',
+    fontSize: 9,
+    fontWeight: '600',
   },
   clearButton: {
     marginHorizontal: 20,
@@ -232,6 +271,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   bottomSpacer: {
-    height: 70, // Espacio para el navbar flotante
+    height: 70,
   },
 });

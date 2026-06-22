@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHistory } from '../hooks/useHistory';
+import { useLanguage } from '../hooks/useLanguage';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const BUTTON_SIZE = Math.min((width - 60) / 4, 80);
@@ -19,8 +21,9 @@ export default function CalculatorScreen() {
   const [expression, setExpression] = useState('');
   const [newNumber, setNewNumber] = useState(true);
   const { addHistory } = useHistory();
+  const { t } = useTranslation();
+  const { getNumberInSystem, language } = useLanguage();
 
-  // Optimizado: sin animaciones para mejor rendimiento
   const handleNumber = useCallback((num: string) => {
     try {
       if (newNumber) {
@@ -32,30 +35,29 @@ export default function CalculatorScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Error al ingresar el número');
+      Alert.alert('Error', t('error'));
       console.error(error);
     }
-  }, [display, newNumber]);
+  }, [display, newNumber, t]);
 
   const handleOperator = useCallback((op: string) => {
     try {
       setExpression(display + ' ' + op + ' ');
       setNewNumber(true);
     } catch (error) {
-      Alert.alert('Error', 'Error al ingresar el operador');
+      Alert.alert('Error', t('error'));
       console.error(error);
     }
-  }, [display]);
+  }, [display, t]);
 
   const handleCalculate = useCallback(() => {
     try {
       if (expression && !newNumber) {
         const fullExpression = expression + display;
-        // Usar Function con más seguridad
         const result = Function('"use strict"; return (' + fullExpression + ')')();
         
         if (!isFinite(result)) {
-          Alert.alert('Error', 'Operación inválida');
+          Alert.alert('Error', t('invalidOperation'));
           return;
         }
 
@@ -74,13 +76,13 @@ export default function CalculatorScreen() {
         setNewNumber(true);
       }
     } catch (error) {
-      Alert.alert('Error', 'Error al calcular');
+      Alert.alert('Error', t('error'));
       console.error(error);
       setDisplay('Error');
       setExpression('');
       setNewNumber(true);
     }
-  }, [expression, display, addHistory, newNumber]);
+  }, [expression, display, addHistory, newNumber, t]);
 
   const handleClear = useCallback(() => {
     setDisplay('0');
@@ -124,16 +126,20 @@ export default function CalculatorScreen() {
       }
     };
 
+    const displayLabel = type === 'number' || type === 'function' 
+      ? getNumberInSystem(label) 
+      : label;
+
     return (
       <TouchableOpacity
         style={[styles.button, getButtonStyle()]}
         onPress={onPress}
         activeOpacity={0.6}
       >
-        <Text style={[styles.buttonText, getTextStyle()]}>{label}</Text>
+        <Text style={[styles.buttonText, getTextStyle()]}>{displayLabel}</Text>
       </TouchableOpacity>
     );
-  }, []);
+  }, [getNumberInSystem]);
 
   return (
     <LinearGradient
@@ -144,7 +150,7 @@ export default function CalculatorScreen() {
         <View style={styles.displayContainer}>
           <Text style={styles.expressionText}>{expression}</Text>
           <Text style={styles.displayText} numberOfLines={1}>
-            {display}
+            {getNumberInSystem(display)}
           </Text>
         </View>
 

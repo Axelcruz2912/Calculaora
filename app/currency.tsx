@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getExchangeRates, currencies } from '../utils/currencyApi';
 import { useHistory } from '../hooks/useHistory';
+import { useLanguage } from '../hooks/useLanguage';
+import { useTranslation } from 'react-i18next';
 
 export default function CurrencyScreen() {
   const [amount, setAmount] = useState('1');
@@ -31,6 +33,9 @@ export default function CurrencyScreen() {
   const [modalType, setModalType] = useState<'from' | 'to'>('from');
   
   const { addHistory } = useHistory();
+  const { t } = useTranslation();
+  const { getNumberInSystem } = useLanguage();
+  
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const resultAnim = useRef(new Animated.Value(0)).current;
 
@@ -67,7 +72,7 @@ export default function CurrencyScreen() {
       setRates(data.conversion_rates);
       setLastUpdate(new Date().toLocaleString());
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron obtener las tasas de cambio');
+      Alert.alert(t('error'), t('error'));
       console.error('Error fetching rates:', error);
     } finally {
       setLoading(false);
@@ -77,13 +82,13 @@ export default function CurrencyScreen() {
   const convertCurrency = useCallback(() => {
     try {
       if (!rates[toCurrency as keyof typeof rates]) {
-        Alert.alert('Error', 'Tasa de cambio no disponible');
+        Alert.alert(t('error'), 'Tasa de cambio no disponible');
         return;
       }
 
       const numAmount = parseFloat(amount);
       if (isNaN(numAmount) || numAmount <= 0) {
-        Alert.alert('Error', 'Ingresa un monto válido');
+        Alert.alert(t('error'), t('invalidAmount'));
         return;
       }
 
@@ -105,10 +110,10 @@ export default function CurrencyScreen() {
       });
 
     } catch (error) {
-      Alert.alert('Error', 'Error al convertir');
+      Alert.alert(t('error'), 'Error al convertir');
       console.error(error);
     }
-  }, [amount, fromCurrency, toCurrency, rates, addHistory]);
+  }, [amount, fromCurrency, toCurrency, rates, addHistory, t]);
 
   const handleSwapCurrencies = useCallback(() => {
     setFromCurrency(toCurrency);
@@ -162,7 +167,7 @@ export default function CurrencyScreen() {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  Seleccionar {modalType === 'from' ? 'moneda origen' : 'moneda destino'}
+                  {modalType === 'from' ? t('from') : t('to')}
                 </Text>
                 <TouchableOpacity 
                   onPress={() => setModalVisible(false)}
@@ -200,6 +205,11 @@ export default function CurrencyScreen() {
     </Modal>
   );
 
+  // Formatear número según el idioma
+  const formatNumber = (num: string) => {
+    return getNumberInSystem(num);
+  };
+
   return (
     <LinearGradient
       colors={['#0f0c29', '#302b63', '#24243e']}
@@ -211,10 +221,10 @@ export default function CurrencyScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-            <Text style={styles.title}>Conversor de Monedas</Text>
+            <Text style={styles.title}>{t('converter')}</Text>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Monto</Text>
+              <Text style={styles.label}>{t('amount')}</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
@@ -231,7 +241,7 @@ export default function CurrencyScreen() {
             <View style={styles.currencyContainer}>
               <View style={styles.selectorWrapper}>
                 <CurrencySelector 
-                  label="De" 
+                  label={t('from')} 
                   value={fromCurrency} 
                   onPress={() => openModal('from')} 
                 />
@@ -254,7 +264,7 @@ export default function CurrencyScreen() {
 
               <View style={styles.selectorWrapper}>
                 <CurrencySelector 
-                  label="A" 
+                  label={t('to')} 
                   value={toCurrency} 
                   onPress={() => openModal('to')} 
                 />
@@ -273,7 +283,7 @@ export default function CurrencyScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Text style={styles.convertButtonText}>
-                  {loading ? 'Cargando...' : 'Convertir'}
+                  {loading ? t('loading') : t('convert')}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -286,10 +296,10 @@ export default function CurrencyScreen() {
                 ]}
               >
                 <Text style={styles.resultText}>
-                  {amount} {fromCurrency} =
+                  {formatNumber(amount)} {fromCurrency} =
                 </Text>
                 <Text style={styles.resultValue}>
-                  {result} {toCurrency}
+                  {formatNumber(result)} {toCurrency}
                 </Text>
               </Animated.View>
             )}
@@ -300,18 +310,18 @@ export default function CurrencyScreen() {
               disabled={loading}
             >
               <Ionicons name="refresh-outline" size={18} color="#a29bfe" />
-              <Text style={styles.refreshText}>Actualizar tasas</Text>
+              <Text style={styles.refreshText}>{t('updateRates')}</Text>
             </TouchableOpacity>
 
             {lastUpdate && (
               <Text style={styles.updateText}>
-                Última actualización: {lastUpdate}
+                {t('lastUpdate')}: {lastUpdate}
               </Text>
             )}
           </Animated.View>
 
           <Animated.View style={[styles.infoCard, { opacity: fadeAnim }]}>
-            <Text style={styles.infoTitle}>Tasas de cambio populares</Text>
+            <Text style={styles.infoTitle}>{t('popularRates')}</Text>
             {loading ? (
               <ActivityIndicator size="small" color="#6c5ce7" />
             ) : (
