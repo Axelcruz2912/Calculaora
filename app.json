@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Mobile_Matrix_Calculator",
+    "name": "Mobile MatrixCalculator",
     "slug": "Mobile_Matrix_Calculator",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/calculadora.png",
     "scheme": "mobilematrixcalculator",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.axel_jeronimo.Mobile_Matrix_Calculator"
     },
     "web": {
       "output": "static",
@@ -44,6 +45,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d3f37899-822a-4ec6-87e5-c929f6bbcd39"
+      }
     }
   }
 }
